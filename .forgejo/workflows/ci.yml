@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: docker
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: a C++ compiler, so the mod_finding tests run rather than skip
+        run: sudo apt-get update && sudo apt-get install -y g++
+      - name: warnings are errors
+        run: python -W error -m unittest -v
+      - name: every file has to compile
+        run: |
+          for f in *.py; do python -m py_compile "$f"; done
+          g++ -std=c++17 -O2 -Wall -Wextra -Wpedantic -Werror mod_finding.cpp -o /tmp/mod_finding
+      - name: the demos have to run
+        run: |
+          python primeNum.py > /dev/null
+          python cryptomath.py > /dev/null
+          python modular_exponentiation.py > /dev/null
+          python fermat_primality_test.py > /dev/null
+      - name: a real key pair, end to end
+        run: |
+          cd /tmp
+          python "$GITHUB_WORKSPACE/generate_keys.py" citest --key-size 1024 > /dev/null
+          test -f citest_pubkey.txt && test -f citest_privkey.txt
+          test "$(stat -c '%a' citest_privkey.txt)" = "600"
+          echo "key files written, private one is 0600"

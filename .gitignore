@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+# generated key files
+*_pubkey.txt
+*_privkey.txt
+
+# compiled C++
+mod_finding
+mod_finding.exe
